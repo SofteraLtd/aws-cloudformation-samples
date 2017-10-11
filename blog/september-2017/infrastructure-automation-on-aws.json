@@ -1,0 +1,112 @@
+{
+"AWSTemplateFormatVersion": "2010-09-09",
+    "Description": "AWS CF Template accompanying the Softera blog post https://www.softera.io/blog/september-2017/infrastructure-automation-on-aws",
+    "Metadata": {
+
+    },
+    "Resources": {
+        "WebServer1": {
+            "Type": "AWS::EC2::Instance",
+            "Properties": {
+                "KeyName": "hsajjad-kp",
+                "ImageId": "ami-acd005d5",
+                "InstanceType": "t2.micro",
+                "AvailabilityZone": "eu-west-1a",
+                "SecurityGroupIds" : [
+                    { "Ref": "WebSecGroup" }
+                ],
+                "Tags": [
+                    {
+                        "Key": "Name",
+                        "Value": "WebServer1"
+                    }
+                ],
+                "UserData": {
+                    "Fn::Base64": {
+                        "Fn::Join": [
+                            "",
+                            [
+                                "#!/bin/bash\n",
+                                "yum install -y httpd\n",
+                                "service httpd start\n",
+                                "echo '<h1>Hello World from WebServer1</h1>' > /var/www/html/index.html",
+                                "\n"
+                            ]
+                        ]
+                    }
+                }
+            }
+        },
+        "WebServer2": {
+            "Type": "AWS::EC2::Instance",
+            "Properties": {
+                "KeyName": "hsajjad-kp",
+                "ImageId": "ami-acd005d5",
+                "InstanceType": "t2.micro",
+                "AvailabilityZone": "eu-west-1b",
+                "SecurityGroupIds" : [
+                    { "Ref": "WebSecGroup" }
+                ],
+                "Tags": [
+                    {
+                        "Key": "Name",
+                        "Value": "WebServer2"
+                    }
+                ],
+                "UserData": {
+                    "Fn::Base64": {
+                        "Fn::Join": [
+                            "",
+                            [
+                                "#!/bin/bash\n",
+                                "yum install -y httpd\n",
+                                "service httpd start\n",
+                                "echo '<h1>Hello World from WebServer2</h1>' > /var/www/html/index.html",
+                                "\n"
+                            ]
+                        ]
+                    }
+                }
+            }
+        },
+        "ElasticLoadBalancer": {
+           "Type": "AWS::ElasticLoadBalancing::LoadBalancer",
+           "Properties": {
+                "AvailabilityZones" : { "Fn::GetAZs" : "" },
+                "CrossZone": "true",
+                "Instances" : [ { "Ref" : "WebServer1" },{ "Ref" : "WebServer2" } ],
+                "Listeners" : [ {
+                "LoadBalancerPort" : "80",
+                "InstancePort" : "80",
+                "Protocol" : "HTTP"
+                } ]
+           }
+        },    
+        "WebSecGroup" : {
+          "Type" : "AWS::EC2::SecurityGroup",
+          "Properties" : {
+            "GroupDescription" : "Enable HTTP, HTTPs and SSH access",
+            "SecurityGroupIngress" : [ 
+              {
+                "CidrIp" : "0.0.0.0/0",
+                "FromPort" : "80",
+                "IpProtocol" : "tcp",
+                "ToPort" : "80"                  
+              },
+              {
+                "CidrIp" : "0.0.0.0/0",
+                "FromPort" : "443",
+                "IpProtocol" : "tcp",
+                "ToPort" : "443"                  
+              },
+              {
+                "CidrIp" : "92.22.5.0/32",
+                "FromPort" : "22",
+                "IpProtocol" : "tcp",
+                "ToPort" : "22"                  
+              }                         
+            ]
+          }
+        }
+    }
+}
